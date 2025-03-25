@@ -1,8 +1,19 @@
-from main import  API_KEY, PROJECT_ID
-import os, json
+import google.generativeai as gem
+from google import genai
+from google.genai import types
+import os
+client = genai.C(api_key="GEMINI_API_KEY")
 
-class GoogleGemResponse:
-    def __init__(self,prompt:str, difficulity:str, response:str):
-        self.prompt = prompt
-        self.difficulity = difficulity
-        self.response = response
+
+API_KEY = os.environ['GOOGLE_GEM_API_KEY']
+PROJECT_ID = os.environ['GOOGLE_GEM_PROJECT_ID']
+model = "gemini-1.5-pro"
+
+response = client.models.generate_content(
+    model = model,
+    contents = ["Explain how AI works"],
+    config = types.GenerateContentConfig(
+        max_output_tokens = 500,
+        temperature = 0.1
+    )
+)

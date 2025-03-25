@@ -423,7 +423,7 @@ class chessBoard:
         if self.instanceOfPiece(piece):
             pos = list(self.getPosition(piece))
             #coordinates not a random var name
-            x = ord(pos[0])
+            x = ord(    pos[0])
             y=int(pos[1])
             #all possible directions
             directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
@@ -512,7 +512,7 @@ class chessBoard:
 
     def knightMovements(self, piece)->list[str]:
 
-        directions = [(2, 1), (1, 2), (-2, 1), (-1, 2),(2, -1), (1, -2), (-2, -1), (-1, -2)]
+        directions = [8]
         player = "player1" if piece in self.player1 else "player2"
         moves = []
         if self.instanceOfPiece(piece):
