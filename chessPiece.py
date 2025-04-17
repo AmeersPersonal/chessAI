@@ -12,7 +12,7 @@ class Piece :
     pieceList = []
     #piece list of all instances
     pieces = []
-    eligbleMoves = []
+
 
     def getPlayerType(self):
         return self.player_type
@@ -29,8 +29,7 @@ class Piece :
         return False
     def getPieceName(self) -> str:
         return self.name
-    def addToEligibleMoves(self, pos):
-        self.eligbleMoves.append([self.getPieceName(), pos])
+
     def getPieceType(self) -> str:
         if "pawn" in self.getPieceName():
             return "pawn"
@@ -133,8 +132,8 @@ class King(Piece):
         self.registerPiece()
         self.hasMoved = False
 
+
     def setPosition(self, pos):
         self.position = pos
         self.hasMoved = True
-
 
