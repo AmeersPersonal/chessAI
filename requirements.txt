@@ -1,6 +1,6 @@
 google-generativeai
 pygame~=2.6.1
-PySimpleGUI~=5.0.9
+tkinter
 configparser~=7.2.0
 
 google~=3.0.0

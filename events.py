@@ -300,38 +300,91 @@ class EventManger:
                     continue
                 else:
                     self.moves[piece.getPieceName()].append(pos2)
-        if piece.hasMoved:
-            return self.moves
 
-        #castling
-        rooks = [r for r in player.get_pieces() if isinstance(r, Piece) and r.getPieceType() == "rook"]
-        num:int
-        for i in range(0, 7):
-            if player.get_player_id() == self.player1.get_player_id():
-                num=1
-            else:
-                num=8
-            pos =chr(97 + i) + str(num)
-            nearByPiece = self.board.get_board().get(pos, " ")
-            if nearByPiece == " ":
-                continue
-            if nearByPiece != " ":
-                for rook in rooks:
-                    if rook.getPieceName() == nearByPiece:
-                        if rook.getPosition() == "h1" or "a8":
-                            self.moves[piece.getPieceName()].append("short_castle")
-                        if rook.getPosition() == "a1" or "h8":
-                            self.moves[piece.getPieceName()].append("long_castle")
 
 
 
         return self.moves
 
+    def castling_moves(self, king):
 
-    # promotes the pawn to desired piece
-    # if i have time to Create a setting option then the player can choose auto select queen
+        if king.getPieceType().lower() != "king" or king.hasMoved:
+            return self.moves
 
+        player = self.player1 if king in self.player1.get_pieces() else self.player2
+        back_rank = "1" if player == self.player1 else "8"
+        board_state = self.board.get_board()
 
+        # Short castling
+        if self.can_castle(king, "h" + back_rank):
+            self.moves[king.getPieceName()].append("h" + back_rank)
+
+        # Long castling
+        if self.can_castle(king, "a" + back_rank):
+           self.moves[king.getPieceName()].append("a" + back_rank)
+
+        return self.moves
+
+    def can_castle(self, king, rook_pos):
+        rook = self.board.get_board().get(rook_pos, " ")
+        if not isinstance(king, King) or isinstance(king, King) and  king.hasMoved:
+            return False
+
+        # Determine clear path between king and rook
+        king_x = ord(king.getPosition()[0])
+        rook_x = ord(rook_pos[0])
+        y = rook_pos[1]
+        step = 1 if rook_x > king_x else -1
+
+        for x in range(king_x + step, rook_x, step):
+            pos = chr(x) + y
+            if self.board.get_board().get(pos, " ") != " ":
+                return False  # Path not clear
+
+        # Optionally: Check if squares are under attack (not implemented here)
+        return True
+
+    def perform_castling_by_rook_position(self, king, rook_pos, board_state):
+        """
+        Executes castling by identifying the castling side from the rook's position.
+        Assumes the move is legal and the king has not moved.
+        Parameters:
+            king: the king piece object
+            rook_pos: the square (e.g., 'h1' or 'a8') where the rook is currently located
+        """
+        player = self.player1 if king in self.player1.get_pieces() else self.player2
+        back_rank = "1" if player == self.player1 else "8"
+        king_from = "e" + back_rank
+
+        if rook_pos == "h" + back_rank:
+            # Kingside castling
+            king_to = "g" + back_rank
+            rook_to = "f" + back_rank
+        elif rook_pos == "a" + back_rank:
+            # Queenside castling
+            king_to = "c" + back_rank
+            rook_to = "d" + back_rank
+        else:
+            return
+        rook = board_state.get(rook_to, " ")
+        if isinstance(rook, Piece):
+            # Move the king
+            board_state[king_to] = king
+            board_state[king_from] = " "
+            king.setPosition(king_to)
+            for img in Piece.pieceList:
+                if img["name"] == king.getPieceName():
+                    img["rect"]= self.board.positionToCoordinates(king_to)
+                if img["name"] == rook:
+                    img["rect"]= self.board.positionToCoordinates(rook_to)
+
+            # Move the rook
+            board_state[rook_to] = rook
+            board_state[rook_pos] = " "
+            rook.setPosition(rook_to)
+
+            # Optionally mark them as having moved
+            king.hasMoved = True  # Assumes this method exists
 
 
     def current_player(self):
@@ -374,12 +427,22 @@ class EventManger:
                 self.rook_movement_event(values)
             if "king" == values.getPieceType():
                 self.king_movement_event(values)
+                self.castling_moves(values)
 
-        
     def is_check(self):
-        #there should be only one king for each player
-        king = [k for k in self.current_player().get_pieces() if isinstance(k, King) and k.getPieceType() == "king"][0]
-        if king.getPieceName() in self.potenial_captures_piece:
+        # Ensure exactly one king is present for the current player
+        king_list = [k for k in self.current_player().get_pieces().values()
+                     if isinstance(k, Piece) and k.getPieceType() == "king"]
+
+        if not king_list:
+            raise Exception("No king found for the current player.")
+        if len(king_list) > 1:
+            raise Exception("Multiple kings found for the current player.")
+
+        king = king_list[0]
+
+        # Check if the king is in the list of potentially captured pieces
+        if king in self.potenial_captures_piece:
             return True
 
         return False
@@ -487,47 +550,59 @@ class EventManger:
 
         return moves_out_of_check
 
+    def pinned_pieces(self):
+        pinned = []
+        current_player = self.player1 if self.player1.get_player_id() == self.current_player().get_player_id() else self.player2
+        opponent = self.player2 if current_player == self.player1 else self.player1
 
+        king = next((piece for piece in current_player.get_pieces()
+                     if isinstance(piece, Piece) and piece.getPieceType() == "king"), None)
+        if not king:
+            return pinned
 
-    def pinned_pieces(self, p):
+        king_x, king_y = ord(king.getPosition()[0]), int(king.getPosition()[1])
 
-        pinned_pieces= []
-        player = self.player1 if self.player1.get_player_id() == self.player2.get_player_id() else self.player2
-        opposing_player = self.player2 if player.get_player_id() == self.player1.get_player_id() else self.player1
-        king= [k for k in player.get_pieces() if isinstance(k, Piece) and k.getPieceType() == "king"][0]
-        king_pos = list(king.getPosition())
+        directions = {
+            "straight": [(1, 0), (-1, 0), (0, 1), (0, -1)],
+            "diagonal": [(1, 1), (-1, 1), (-1, -1), (1, -1)]
+        }
 
-        vertical_and_horizantal = [(1,0), (-1, 0), (0, 1), (0,-1)]
-        diagnol = [(1,1), (-1,1), (0,-1), (0,1)]
+        for dir_type, dirs in directions.items():
+            for dx, dy in dirs:
+                path = []
+                for i in range(1, 8):
+                    x = king_x + dx * i
+                    y = king_y + dy * i
+                    if not ('a' <= chr(x) <= 'h') or not (1 <= y <= 8):
+                        break
+                    pos = chr(x) + str(y)
+                    piece = self.board.get_board().get(pos, " ")
 
+                    if piece == " ":
+                        continue
 
-        for x, y in vertical_and_horizantal + diagnol:
-            piece_pos_x = x +ord(king_pos[0])
-            piece_pos_y = y + int(king_pos[1])
-            p =  self.board.get_board().get(chr(piece_pos_x) + str(piece_pos_y), " ")
-            if p == " ":
-                continue
-            if p != " ":
-                if p not in player.get_pieces():
-                    continue
-                if (x, y) in vertical_and_horizantal:
-                    pinned_pieces.append(player.getSpeficPiece(p))
-                if (x, y) in diagnol:
-                    pinned_pieces.append(player.getSpeficPiece(p))
+                    if piece in current_player.get_pieces():
+                        if path:
+                            break  # More than one friendly piece in this direction
+                        path.append(piece)
+                    else:
+                        if not path:
+                            break  # No friendly piece to be pinned
+                        pinned_piece = path[0]
+                        # Check if opponent piece can pin in this direction
+                        if (dir_type == "straight" and piece.getPieceType() in ("rook", "queen")) or \
+                                (dir_type == "diagonal" and piece.getPieceType() in ("bishop", "queen")):
+                            pinned.append(pinned_piece)
+                        break
+        return pinned
 
-        return pinned_pieces
+    def pinned_piece_moves(self, piece):
+        if piece not in self.pinned_pieces():
+            return []
 
-def pinned_piece_moves(self, piece):
-    moves= []
-    if piece.getPieceName() not in self.pinned_pieces():
-        return
-    player = self.player_1 if self.player1.get_player_id() == self.player2.get_player_id() else self.player2
-    opposing_player = self.player2 if player.get_player_id() == self.player1.get_player_id() else self.player1
-    piece_pos = list(piece.getPosition())
-    x=piece_pos[0]
-    y=piece_pos[1]
-
-
+        # Logic to generate legal moves for the pinned piece would go here
+        # For now, just return an empty list or placeholder
+        return []
 
 
 
@@ -550,6 +625,11 @@ def pinned_piece_moves(self, piece):
 
     def is_eligible_move(self, piece, position):
         moves = self.moves
+        if self.pinned_piece_moves(piece):
+            return False
+
+
+
         if self.is_check():
             moves_out_of_check = self.moves_out_of_check()
             for key, value in moves_out_of_check.items():
@@ -557,13 +637,13 @@ def pinned_piece_moves(self, piece):
                     return False
                 if piece.getPieceName() in key and position in value:
                     return True
-            else:
+        else:
 
-                for key, value in moves.items():
-                    if piece not in self.current_player().get_pieces().values():
-                        return False
-                    if piece.getPieceName() in key and position in value:
-                        return True
+            for key, value in moves.items():
+                if piece not in self.current_player().get_pieces().values():
+                    return False
+                if piece.getPieceName() in key and position in value:
+                    return True
         return False
 
 

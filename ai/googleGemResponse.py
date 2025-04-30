@@ -16,8 +16,8 @@ client = genai.Client(api_key=API_KEY)
 def is_pinned( board, player ):
     response = client.models.generate_content(
         model = model,
-                contents = ["Pretend that you're a grandmaster that has stage 4 cancer and desperate to give his apprentice all the right information to win.\n"
-                    "Only state the information i am about to ask nothing else as the more you talk the faster your health deteriorates \n"
+                contents = ["Pretend that you're a grandmaster and desperate to give his apprentice all the right information to win.\n"
+                    "Only state the information i am about to ask nothing else \n"
                     "reminder pinned pieces is when a piece if moved will result in check if there is none return an empty string \n"
                     f"return me a list of all {player} pieces that is pinned to the king, not the position of the pinned piece for the the player using this {board} the current player is player also explain why the piece is pinned"],
         config = types.GenerateContentConfig(
@@ -32,8 +32,8 @@ def is_pinned( board, player ):
 def piece_that_causes_pin(board, player):
     response = client.models.generate_content(
         model = model,
-        contents=["Pretend that you're a grandmaster that has stage 4 cancer and desperate to give his apprentice all the right information to win.\n",
-                  "Only state the information i am about to ask nothing else as the more you talk the faster your health detonates \n",
+        contents=["Pretend that you're a grandmaster and desperate to give his apprentice all the right information to win.\n",
+                  "Only state the information i am about to ask nothing else a\n",
                   "return me in this format [(piece_name, [list of pieces pinning it])], reminder pinned pieces is a piece that next to the king and if moved will result in check or checkmate \n "
                   f"the current player is {player} and this is the board {board} and these are the pinned pieces {is_pinned(board, player)}"],
         config= types.GenerateContentConfig(

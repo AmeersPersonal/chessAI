@@ -72,6 +72,12 @@ def game():
             image["rect"].topleft = eventManager.board.positionToCoordinates(coords)
 
             square = eventManager.board.get_board().get(coords, " ")
+            back_rank = "1" if player == eventManager.player1.get_player_id() else "8"
+
+            p = eventManager.current_player().getSpeficPiece(image["name"])
+            if p.getPieceType() == "king":
+               if eventManager.can_castle(p, coords):
+                  eventManager.perform_castling_by_rook_position(p, coords, eventManager.board )
 
             if square != " ":
                if eventManager.is_eligible_move(piece, coords):
@@ -95,7 +101,7 @@ def game():
             eventManager.pawn_promotion_event(player, piece, "queen")
 
 
-            print(eventManager.moves_out_of_check())
+            print(eventManager.moves)
             
             eventManager.new_turn()
 
